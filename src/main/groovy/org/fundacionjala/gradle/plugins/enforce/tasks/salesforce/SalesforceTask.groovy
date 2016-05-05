@@ -10,7 +10,6 @@ import org.fundacionjala.gradle.plugins.enforce.credentialmanagement.CredentialM
 import org.fundacionjala.gradle.plugins.enforce.exceptions.deploy.DeployException
 import org.fundacionjala.gradle.plugins.enforce.tasks.ForceTask
 import org.fundacionjala.gradle.plugins.enforce.tasks.credentialmanager.CredentialParameterValidator
-import org.fundacionjala.gradle.plugins.enforce.utils.salesforce.helperManager.Helper
 import org.fundacionjala.gradle.plugins.enforce.utils.AnsiColor
 import org.fundacionjala.gradle.plugins.enforce.utils.Constants
 import org.fundacionjala.gradle.plugins.enforce.utils.Util
@@ -44,6 +43,7 @@ abstract class SalesforceTask extends ForceTask {
     public ArrayList<String> arrayPaths
     public String projectPackagePath
     public Map parameters
+    ArrayList<String> FOLDERS_WITH_SUB_FOLDERS = ['documents', 'reports', 'dashboards']
 
     /**
      * Sets description and group task
@@ -105,34 +105,18 @@ abstract class SalesforceTask extends ForceTask {
      * @param packagePath is path when package xml will be to create
      * @param files is an array of files
      */
-    void writePackage(String packagePath, ArrayList<File> files) {
+    void writePackage(String packagePath, ArrayList<File> files, boolean withProjectPath = true) {
         FileWriter fileWriter = new FileWriter(packagePath)
-        files = files.grep({ file ->
-            !file.name.endsWith(Constants.META_XML_NAME)
+        files = files.grep({ File file ->
+            String folderName = file.getParentFile().getName()
+            !file.name.endsWith(Constants.META_XML) || (FOLDERS_WITH_SUB_FOLDERS.contains(folderName)
+                    && file.name.endsWith(Constants.META_XML))
         })
-        packageBuilder.createPackage(files, projectPath)
-        packageBuilder.write(fileWriter)
-        fileWriter.close()
-    }
-
-    /**
-     * Prepares the packages requested
-     * @param packagePath is path when package xml will be to create
-     * @param files is an array of files
-     */
-    void preparePackage(String packagePath, ArrayList<File> files) {
-        this.packageLoaded = packagePath
-        packageBuilder.createPackage(files, projectPath)
-    }
-
-    /**
-     * Saves package created
-     */
-    void savePackage() {
-        if (!this.packageLoaded) {
-            throw new DeployException(SAVE_PACKAGE_ERROR, [])
+        if (withProjectPath) {
+            packageBuilder.createPackage(files, projectPath)
+        } else {
+            packageBuilder.createPackage(files)
         }
-        FileWriter fileWriter = new FileWriter(this.packageLoaded)
         packageBuilder.write(fileWriter)
         fileWriter.close()
     }

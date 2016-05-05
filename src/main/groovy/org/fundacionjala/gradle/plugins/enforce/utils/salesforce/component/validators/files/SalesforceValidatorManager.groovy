@@ -1,6 +1,5 @@
 package org.fundacionjala.gradle.plugins.enforce.utils.salesforce.component.validators.files
 
-import org.codehaus.groovy.runtime.GStringImpl
 import org.fundacionjala.gradle.plugins.enforce.utils.salesforce.MetadataComponents
 
 /**
@@ -11,6 +10,9 @@ public class SalesforceValidatorManager {
     private static final String COMPONENTS_SUPPORT_XML = 'components support xml'
     private static Map<String, SalesforceValidator> validatorMap = [
             "${MetadataComponents.DOCUMENTS.getDirectory()}": new DocumentSalesforceValidator(),
+            "${MetadataComponents.REPORTS.getDirectory()}": new ReportSalesforceValidator(),
+            "${MetadataComponents.DASHBOARDS.getDirectory()}": new DashboardSalesforceValidator(),
+            "${MetadataComponents.AURADEFINITIONBUNDLE.getDirectory()}": new LightningSalesforceValidator(),
             "${COMPONENTS_SUPPORT_XML}": new XMLFileSalesforceValidator()
     ]
 
@@ -35,12 +37,19 @@ public class SalesforceValidatorManager {
     private static GString createKey(String folderName) {
         GString key = "${folderName}"
         MetadataComponents component = MetadataComponents.getComponent(folderName)
-        if(component != null) {
-            if (component.containsXMLFile() &&
-                !folderName.equals(MetadataComponents.DOCUMENTS.directory)) {
-                key = "${COMPONENTS_SUPPORT_XML}"
-            }
+        if(component && component.containsXMLFile() && !isComponentWithSubFolder(folderName)) {
+            key = "${COMPONENTS_SUPPORT_XML}"
         }
         return key
+    }
+
+    /**
+     * Validates if a component has subfolders
+     * @param folderName is component folder name
+     * @return true if component has subfolders
+     */
+    private static boolean isComponentWithSubFolder(String folderName) {
+        return folderName.equals(MetadataComponents.DOCUMENTS.directory) ||
+               folderName.equals(MetadataComponents.REPORTS.directory)
     }
 }
